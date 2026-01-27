@@ -1,0 +1,74 @@
+---
+- name: Patch all Linux servers
+  hosts: all
+  become: true
+  tasks:
+    - name: Hold packages to exclude from upgrade
+      shell: apt-mark hold {{ item }}
+      with_items:
+        - snapd
+        - libc-bin
+      when: ansible_os_family == "Debian"
+
+    - name: Update apt cache (Ubuntu/Debian)
+      apt:
+        update_cache: true
+        cache_valid_time: 1800 # Update cache if older than 30 minutes
+      when: ansible_os_family == "Debian"
+
+    - name: Upgrade all installed packages
+      apt:
+        state: latest
+        upgrade: dist
+      register: upgradable_packages_result
+      when: ansible_os_family == "Debian"
+
+    - debug:
+        msg: "{{ upgradable_packages_result }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Write the message to a local file (overwrites existing file)
+      copy:
+        content: "Packages to be patched in server {{ inventory_hostname }} are {{ upgradable_packages_result.stdout | default({}) | to_nice_json }}"
+        dest: "/tmp/ansible-debug.json"
+        force: yes
+      delegate_to: localhost
+      when: ansible_os_family == "Debian"
+
+    - name: Unhold packages
+      shell: apt-mark unhold {{ item }}
+      with_items:
+        - snapd
+        - libc-bin
+      when: ansible_os_family == "Debian"
+
+    - name: Run in check mode to see what would be updated (RHEL, Alma Linux and Rocky Linux)
+      yum:
+        update_cache: yes
+      when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
+
+    - name: Patch all installed packages excluding httpd, php and kernel
+      dnf:
+        name: "*"
+        state: latest
+        exclude:
+        - httpd
+        - php
+        - kernel*
+        - kpatch*
+        use_backend: dnf
+      register: yum_update_results
+      when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
+
+    - name: Display information about packages that would be updated
+      debug:
+        msg: "{{ yum_update_results.results }}"
+      when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
+
+    - name: Write the message to a local file (append an existing file)
+      lineinfile:
+        path: "/tmp/ansible-debug.json"
+        line: "Packages to be patched in server {{ inventory_hostname }} are {{ yum_update_results.results | default({}) | to_nice_json }}"
+        insertafter: EOF
+      delegate_to: localhost
+      when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
