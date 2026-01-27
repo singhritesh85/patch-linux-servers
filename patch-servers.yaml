@@ -22,7 +22,7 @@
 
     - name: Write the message to a local file (overwrites existing file)
       copy:
-        content: "Packages to be patched in server {{ inventory_hostname }} are {{ upgradable_packages_result.stdout | default({}) | to_nice_json }}"
+        content: "Packages to be patched in server {{ inventory_hostname }} are {{ upgradable_packages_result.stdout_lines | default({}) | to_nice_json }}"
         dest: "/tmp/ansible-debug.json"
         force: yes
       delegate_to: localhost
