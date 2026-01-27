@@ -32,8 +32,10 @@
         state: latest
         update_cache: yes
         exclude:
-        - openssh*
-        - openssl*
+        - httpd
+        - php
+        - kernel*
+        - kpatch*
       check_mode: true
       register: yum_update_status
       when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
