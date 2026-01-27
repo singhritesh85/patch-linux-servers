@@ -33,7 +33,7 @@
         update_cache: yes
       when: ansible_distribution in ["RedHat", "Rocky", "AlmaLinux"]
 
-    - name: Patch all installed packages excluding httpd, php and kernel
+    - name: Patch all installed packages
       dnf:
         name: "*"
         state: latest
