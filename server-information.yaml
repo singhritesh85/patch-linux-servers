@@ -1,0 +1,75 @@
+---
+- name: Get all Linux server information
+  hosts: all
+  become: true
+  tasks:
+    - name: Get the Operating system details
+      command: cat /etc/os-release
+      register: os_release_output
+
+    - debug:
+        msg: "{{ os_release_output }}"
+
+    - name: Ensure the file should not be existed locally
+      file:
+        path: "/tmp/all-linux-server-information.json"
+        state: absent
+      delegate_to: localhost
+
+    - name: Create the file
+      file:
+        path: "/tmp/all-linux-server-information.json"
+        state: touch
+      delegate_to: localhost
+
+    - name: Write the message to a local file (append existing file)
+      lineinfile:
+        path: "/tmp/all-linux-server-information.json"
+        line: "Operating System details of server {{ inventory_hostname }} is {{ os_release_output.stdout_lines | default({}) | to_nice_json }}"
+        insertafter: EOF
+      delegate_to: localhost
+
+    - name: Get the Kernel details of all the Linux Servers
+      command: uname -r
+      register: kernel_details
+
+    - name: Display Kernel Details
+      debug:
+        msg: "{{ kernel_details.stdout_lines }}"
+
+    - name: Write the message to a local file (append an existing file)
+      lineinfile:
+        path: "/tmp/all-linux-server-information.json"
+        line: "Kernel detials of the server {{ inventory_hostname }} is {{ kernel_details.stdout_lines | default({}) | to_nice_json }}"
+        insertafter: EOF
+      delegate_to: localhost
+
+    - name: Get the disk usage of all the Linux Servers
+      command: df -hT
+      register: disk_status
+
+    - name: Display information about disk utilization
+      debug:
+        msg: "{{ disk_status.stdout_lines }}"
+
+    - name: Write the message to a local file (append an existing file)
+      lineinfile:
+        path: "/tmp/all-linux-server-information.json"
+        line: "Disk Utilization of the server {{ inventory_hostname }} is {{ disk_status.stdout_lines | default({}) | to_nice_json }}"
+        insertafter: EOF
+      delegate_to: localhost
+
+    - name: Get the Memory usage of all the Linux Servers
+      command: free -mh
+      register: memory_status
+
+    - name: Display information about disk utilization
+      debug:
+        msg: "{{ memory_status.stdout_lines }}"
+
+    - name: Write the message to a local file (append an existing file)
+      lineinfile:
+        path: "/tmp/all-linux-server-information.json"
+        line: "Memory Utilization of the server {{ inventory_hostname }} is {{ memory_status.stdout_lines | default({}) | to_nice_json }}"
+        insertafter: EOF
+      delegate_to: localhost
