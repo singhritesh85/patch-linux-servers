@@ -21,10 +21,11 @@
       when: ansible_os_family == "Debian"
 
     - name: Write the message to a local file (overwrites existing file)
-      copy:
-        content: "Packages to be patched in server {{ inventory_hostname }} are {{ upgradable_packages_result.stdout_lines | default({}) | to_nice_json }}"
-        dest: "/tmp/ansible-debug.json"
-        force: yes
+      lineinfile:
+        path: "/tmp/ansible-debug.json"
+        line: "Packages to be patched in server {{ inventory_hostname }} are {{ upgradable_packages_result.stdout_lines | default({}) | to_nice_json }}"
+        insertafter: EOF
+        create: true
       delegate_to: localhost
       when: ansible_os_family == "Debian"
 
